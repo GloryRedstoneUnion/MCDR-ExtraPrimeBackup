@@ -198,7 +198,7 @@ ExtraPrimeBackup 是一个强大的 MCDReforged 插件，专为 Minecraft 服务
 
 ## 📜 开源许可
 
-本项目采用 [MIT License](LICENSE) 开源，欢迎自由使用和贡献代码！
+本项目采用 [GNU General Public License v3.0](LICENSE) 开源
 
 ## 🤝 贡献指南
 
