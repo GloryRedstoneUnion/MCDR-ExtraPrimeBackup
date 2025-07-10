@@ -33,7 +33,7 @@ ExtraPrimeBackup 是一个强大的 MCDReforged 插件，专为 Minecraft 服务
 
 - [MCDReforged](https://github.com/Fallen-Breath/MCDReforged) 2.x 或更高版本
 - [PrimeBackup](https://github.com/TISUnion/PrimeBackup) 插件
-- [minecraft_data_api](https://github.com/MCDReforged/minecraft-data-api) 插件
+- [minecraft_data_api](https://github.com/Fallen-Breath/MinecraftDataAPI) 插件
 
 ## ⚙️ 配置说明
 
