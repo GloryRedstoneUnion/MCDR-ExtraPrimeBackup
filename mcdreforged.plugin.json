@@ -1,6 +1,6 @@
 {
     "id": "extra_prime_backup",
-    "version": "0.0.1",
+    "version": "0.0.2",
     "name": "Extra Prime Backup",
     "description": {
         "zh_cn": "一个简单的PrimeBackup拓展插件，用于在备份前监测机器是否开启"
@@ -11,7 +11,8 @@
     "link": "https://github.com/esuny/ExtraPrimeBackup",
     "dependencies": {
         "mcdreforged": ">=2.12.0",
-        "prime_backup": ">=1.5"
+        "prime_backup": ">=1.5",
+        "minecraft_data_api": "*"
     },
     "resources": [
     ]
