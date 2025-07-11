@@ -23,6 +23,32 @@ PlServer: PluginServerInterface = None
 DEFAULT_OVERRIDE_MODE = 'thread'  # 可选 'thread' 或 'event'
 
 
+class PermissionConfig(Serializable):
+    """权限配置类"""
+    permissions: dict = {
+        'list': 1, 'status': 1, 'del': 3, 'update': 2, 'add': 2,
+        'add_group': 3, 'add_to_group': 2, 'ignore': 4, 'help': 0, 'helpc': 0
+    }
+
+
+# 权限配置实例
+PERM_CONFIG: PermissionConfig = None
+
+
+def require_permission(perm_key: str):
+    """装饰器：使用MCDR内部权限系统检查权限"""
+    def decorator(func):
+        @functools.wraps(func)
+        def wrapper(source: CommandSource, context: dict, *args, **kwargs):
+            required_level = PERM_CONFIG.permissions.get(perm_key, 1)
+            if source.get_permission_level() < required_level:
+                source.reply(f'§c权限不足！需要权限等级 {required_level}，当前等级 {source.get_permission_level()}')
+                return
+            return func(source, context, *args, **kwargs)
+        return wrapper
+    return decorator
+
+
 class ParseConfig(Serializable):
     block_info_command: str = 'info block get {x} {y} {z}'
     block_info_regex: re.Pattern = re.compile(r"Block info for (?P<block>minecraft:[\w_]+),")
@@ -138,6 +164,7 @@ def on_info(server: PluginServerInterface, info):
 
 # ---------- Command ---------
 
+@require_permission('help')
 def cmd_help(source: CommandSource, context: dict):
     """
     彩色美观、支持what参数、可点击自动填充聊天框的帮助命令
@@ -263,6 +290,7 @@ def cmd_help(source: CommandSource, context: dict):
     return
 
 
+@require_permission('helpc')
 def cmd_helpc(source: CommandSource, context: dict):
     """
     输出所有子命令及说明，全部为简明中文纯文本，便于复制
@@ -286,7 +314,8 @@ def cmd_helpc(source: CommandSource, context: dict):
         source.reply(f'{cmd}    {desc}')
     return
 
-# 注册helpc指令
+# 应用权限装饰器到所有命令函数
+@require_permission('list')
 @new_thread('Pb_CheckPoint_List')
 def cmd_list(source: CommandSource, context: dict):
     """列出检查点，支持树状结构显示"""
@@ -341,6 +370,7 @@ def cmd_list(source: CommandSource, context: dict):
     display_tree(CP_CONFIG.tree)
 
 
+@require_permission('status')
 @new_thread('Pb_CheckPoint_Status')
 def cmd_status(source: CommandSource, context: dict):
     """显示检查点状态，支持新树状结构和嵌套路径，以树状格式显示详细信息"""
@@ -459,6 +489,7 @@ def cmd_status(source: CommandSource, context: dict):
             source.reply('§c配置不存在')
 
 
+@require_permission('del')
 @new_thread('Pb_CheckPoint_Del')
 def cmd_del(source: CommandSource, context: dict):
     """删除检查点或分组"""
@@ -499,6 +530,7 @@ def cmd_del(source: CommandSource, context: dict):
             source.reply('§e配置不存在')
 
 
+@require_permission('add')
 @new_thread('Pb_CheckPoint_Add')
 def cmd_add(source: CommandSource, context: dict):
     # 解析路径和名称
@@ -604,6 +636,7 @@ def cmd_add(source: CommandSource, context: dict):
         source.reply(f'§a成功在分组 "{group_path}" 中添加检查点 "{item_name}"')
 
 
+@require_permission('add_group')
 @new_thread('Pb_CheckPoint_AddG')
 def cmd_add_group(source: CommandSource, context: dict):
     """添加分组，支持多级嵌套路径"""
@@ -712,6 +745,7 @@ def help_callback_override(source: CommandSource, context: CommandContext):
     help_callback(source, context)
 
 
+@require_permission('ignore')
 @new_thread('Pb_CheckPoint_Make')
 def make_callback_override(source: CommandSource, context: CommandContext, ignore=True):
     global CP_CONFIG, block_info_getter  # 确保使用当前插件实例
@@ -774,10 +808,14 @@ def monitor_and_override_primebackup(server, builder, timeout=None):
 
 
 def on_load(server: PluginServerInterface, prev):
-    global CP_CONFIG, block_info_getter, PlServer, override_monitor_thread, override_monitor_running
+    global CP_CONFIG, block_info_getter, PlServer, override_monitor_thread, override_monitor_running, PERM_CONFIG
     block_info_getter = BlockInfoGetter(server)
     PlServer = server
-    # 加载配置，增加 override_mode 选项
+
+    # 使用MCDR标准方法加载权限配置
+    PERM_CONFIG = server.load_config_simple('config.json', target_class=PermissionConfig)
+
+    # 加载检查点配置
     CP_CONFIG = server.load_config_simple(PBCHECKPOINT, target_class=PbCheckPoint, in_data_folder=True)
     override_mode = CP_CONFIG.override_mode
     pl: AbstractPlugin = getattr(server, '_PluginServerInterface__plugin')
@@ -918,6 +956,7 @@ def on_unload(server: PluginServerInterface):
     server.logger.info('[ExtraPrimeBackup] 插件完全卸载完成，所有命令已清除')
 
 
+@require_permission('add_to_group')
 @new_thread('Pb_CheckPoint_AddGT')
 def cmd_add_to_group(source: CommandSource, context: dict):
     """向指定分组添加检查点"""
@@ -973,6 +1012,7 @@ def cmd_add_to_group(source: CommandSource, context: dict):
     source.reply(f'§a成功在分组 "{group_path}" 中添加检查点 "{name}"')
 
 
+@require_permission('update')
 @new_thread('Pb_CheckPoint_Update')
 def cmd_update(source: CommandSource, context: dict):
     """更新检查点：先删除后重新创建"""
